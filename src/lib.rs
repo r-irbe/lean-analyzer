@@ -9,6 +9,7 @@
 //!
 //! 
 
+pub mod affine;
 pub mod ast;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod batch_scanner;
@@ -26,6 +27,7 @@ pub mod wasm_abi;
 pub mod wto;
 pub mod zone;
 
+pub use affine::{reduce_weighted_linear_two_vars, NatAffineConservation, MAX_AFFINE_VARS};
 pub use ast::LeanExpr;
 #[cfg(not(target_arch = "wasm32"))]
 pub use batch_scanner::{BatchILeanScanner, IndexedDeclaration};

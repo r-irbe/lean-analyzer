@@ -536,6 +536,94 @@ export class LeanAnalyzerBridge {
   }
 
   /**
+   * Tightens two natural-number intervals `[xMin, xMax]` and `[yMin, yMax]`
+   * under a weighted linear / Karr affine conservation bound `sumMin <= a * x + b * y <= sumMax`
+   * (`a > 0`, `b > 0`).
+   * Returns `[{ min, max }, { min, max }]` or `null` if unsatisfiable (`Bottom`).
+   */
+  reduceWeightedLinearTwoVars(a, b, sumMin, sumMax, xMin, xMax, yMin, yMax) {
+    const MAX_I64 = 9223372036854775807n;
+    const toI64 = (v) => (!Number.isFinite(v) ? MAX_I64 : BigInt(Math.trunc(v)));
+
+    const wasmFn =
+      this.wasm && this.wasm.exports
+        ? this.wasm.exports.lean_analyzer_weighted_linear_reduce ||
+          this.wasm.exports.lean_analyzer_WeightedSimplexReduce
+        : null;
+    if (
+      typeof wasmFn === "function" &&
+      this.memory &&
+      typeof this.wasm.exports.lean_analyzer_get_scratch_ptr === "function"
+    ) {
+      const ptr = this.wasm.exports.lean_analyzer_get_scratch_ptr();
+      const ok = wasmFn.call(
+        this.wasm.exports,
+        toI64(a),
+        toI64(b),
+        toI64(Math.max(0, sumMin)),
+        toI64(sumMax),
+        toI64(Math.max(0, xMin)),
+        toI64(xMax),
+        toI64(Math.max(0, yMin)),
+        toI64(yMax),
+        ptr
+      );
+      if (ok === 0) return null;
+      const view = new BigInt64Array(this.memory.buffer, ptr, 4);
+      const fromI64 = (v) => (v >= MAX_I64 ? Number.POSITIVE_INFINITY : Number(v));
+      return [
+        { min: fromI64(view[0]), max: fromI64(view[1]) },
+        { min: fromI64(view[2]), max: fromI64(view[3]) }
+      ];
+    }
+
+    const wa = Math.trunc(a);
+    const wb = Math.trunc(b);
+    if (wa <= 0 || wb <= 0) return null;
+    let xLo = Math.max(0, Math.trunc(xMin));
+    let xHi = Number.isFinite(xMax) ? Math.trunc(xMax) : Number.POSITIVE_INFINITY;
+    let yLo = Math.max(0, Math.trunc(yMin));
+    let yHi = Number.isFinite(yMax) ? Math.trunc(yMax) : Number.POSITIVE_INFINITY;
+    if (xLo > xHi || yLo > yHi) return null;
+
+    const sLo = Math.max(0, Math.trunc(sumMin));
+    const sHi = Number.isFinite(sumMax) ? Math.trunc(sumMax) : Number.POSITIVE_INFINITY;
+    if (sLo > sHi) return null;
+
+    for (let iter = 0; iter < 3; iter++) {
+      if (Number.isFinite(sHi)) {
+        const remU = sHi - wb * yLo;
+        if (remU < 0) return null;
+        xHi = Math.min(xHi, Math.floor(remU / wa));
+      }
+      if (Number.isFinite(yHi) && sLo > 0) {
+        const remL = Math.max(0, sLo - wb * yHi);
+        xLo = Math.max(xLo, Math.ceil(remL / wa));
+      }
+      if (xLo > xHi) return null;
+
+      if (Number.isFinite(sHi)) {
+        const remU = sHi - wa * xLo;
+        if (remU < 0) return null;
+        yHi = Math.min(yHi, Math.floor(remU / wb));
+      }
+      if (Number.isFinite(xHi) && sLo > 0) {
+        const remL = Math.max(0, sLo - wa * xHi);
+        yLo = Math.max(yLo, Math.ceil(remL / wb));
+      }
+      if (yLo > yHi) return null;
+    }
+
+    if (Number.isFinite(sHi) && wa * xLo + wb * yLo > sHi) return null;
+    if (Number.isFinite(xHi) && Number.isFinite(yHi) && wa * xHi + wb * yHi < sLo) return null;
+
+    return [
+      { min: xLo, max: xHi },
+      { min: yLo, max: yHi }
+    ];
+  }
+
+  /**
    * Relational `<=` comparison across intervals (`Bottom=0, False=1, True=2, Top=3`).
    */
   evalNatBle(min1, max1, min2, max2) {

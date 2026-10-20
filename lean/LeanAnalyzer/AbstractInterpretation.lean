@@ -469,7 +469,45 @@ theorem simplex_complement_sound (x y s lo_x : Nat)
 
 end OctagonBound
 
+/-!
+## : Scaled Two-Variable Linear / Karr Affine Conservation (`a * x + b * y <= U` and `L <= a * x + b * y`)
+
+1. `WeightedLinearBound.weighted_linear_upper_sound`: under weighted upper bound
+   `a * x + b * y <= U` and lower bound `y_min <= y`, we have `b * y_min <= b * y` and
+   `a * x <= U - b * y_min`.
+2. `WeightedLinearBound.weighted_linear_lower_sound`: under weighted lower bound
+   `L <= a * x + b * y` and upper bound `y <= y_max`, we have `b * y <= b * y_max` and
+   `L - b * y_max <= a * x`.
+-/
+
+namespace WeightedLinearBound
+
+/-- Soundness of weighted two-variable linear upper-bound tightening over `Nat`:
+given `a * x + b * y <= U` and `y_min <= y`, `a * x <= U - b * y_min`. -/
+theorem weighted_linear_upper_sound (a b x y U y_min : Nat)
+    (h_sum : a * x + b * y <= U)
+    (h_ymin : y_min <= y) :
+    a * x <= U - b * y_min := by
+  have h_by : b * y_min <= b * y := Nat.mul_le_mul_left b h_ymin
+  have h_le : a * x + b * y_min <= U :=
+    Nat.le_trans (Nat.add_le_add_left h_by (a * x)) h_sum
+  omega
+
+/-- Soundness of weighted two-variable linear lower-bound tightening over `Nat`:
+given `L <= a * x + b * y` and `y <= y_max`, `L - b * y_max <= a * x`. -/
+theorem weighted_linear_lower_sound (a b x y L y_max : Nat)
+    (h_sum : L <= a * x + b * y)
+    (h_ymax : y <= y_max) :
+    L - b * y_max <= a * x := by
+  have h_by : b * y <= b * y_max := Nat.mul_le_mul_left b h_ymax
+  have h_le : L <= a * x + b * y_max :=
+    Nat.le_trans h_sum (Nat.add_le_add_left h_by (a * x))
+  omega
+
+end WeightedLinearBound
+
 end LeanAnalyzer
+
 
 
 

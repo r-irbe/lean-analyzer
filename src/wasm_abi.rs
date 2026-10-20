@@ -614,6 +614,63 @@ pub extern "C" fn lean_analyzer_octagon_reduce_two_vars(
     }
 }
 
+/// Two-variable weighted linear / Karr affine conservation reduction (`a * x + b * y in [sum_min, sum_max]`)
+/// over `Nat` intervals `x in [x_min, x_max]` and `y in [y_min, y_max]`.
+/// Writes `[x_min', x_max', y_min', y_max']` into `out_buf` (4 `i64` elements) and returns `1`,
+/// or returns `0` if infeasible (`Bottom`) or `out_buf` is null.
+#[no_mangle]
+pub extern "C" fn lean_analyzer_weighted_linear_reduce(
+    a: i64,
+    b: i64,
+    sum_min: i64,
+    sum_max: i64,
+    x_min: i64,
+    x_max: i64,
+    y_min: i64,
+    y_max: i64,
+    out_buf: *mut i64,
+) -> u32 {
+    if out_buf.is_null() {
+        return 0;
+    }
+    match crate::affine::reduce_weighted_linear_two_vars(
+        a,
+        b,
+        sum_min,
+        sum_max,
+        IntervalBound::new(x_min, x_max),
+        IntervalBound::new(y_min, y_max),
+    ) {
+        Some((rx, ry)) => {
+            unsafe {
+                *out_buf = rx.min;
+                *out_buf.add(1) = rx.max;
+                *out_buf.add(2) = ry.min;
+                *out_buf.add(3) = ry.max;
+            }
+            1
+        }
+        None => 0,
+    }
+}
+
+/// Alias for `lean_analyzer_weighted_linear_reduce` supporting $\times 100$ weighted simplex reduction.
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern "C" fn lean_analyzer_WeightedSimplexReduce(
+    a: i64,
+    b: i64,
+    sum_min: i64,
+    sum_max: i64,
+    x_min: i64,
+    x_max: i64,
+    y_min: i64,
+    y_max: i64,
+    out_buf: *mut i64,
+) -> u32 {
+    lean_analyzer_weighted_linear_reduce(a, b, sum_min, sum_max, x_min, x_max, y_min, y_max, out_buf)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -667,6 +724,40 @@ mod tests {
             1
         );
         assert_eq!(out4, [30, 100, 0, 70]);
+
+        // Weighted linear / Karr simplex: 2 * x + 3 * y == 100, x in [10, 100], y in [0, 100]
+        // => x in [11, 50], y in [0, 26]
+        assert_eq!(
+            lean_analyzer_weighted_linear_reduce(
+                2,
+                3,
+                100,
+                100,
+                10,
+                100,
+                0,
+                100,
+                out4.as_mut_ptr()
+            ),
+            1
+        );
+        assert_eq!(out4, [11, 50, 0, 26]);
+        assert_eq!(
+            lean_analyzer_WeightedSimplexReduce(
+                2,
+                3,
+                100,
+                100,
+                10,
+                100,
+                0,
+                100,
+                out4.as_mut_ptr()
+            ),
+            1
+        );
+        assert_eq!(out4, [11, 50, 0, 26]);
     }
 }
+
 
