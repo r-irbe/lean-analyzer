@@ -1,37 +1,40 @@
-# lean-analyzer (`r-irbe/lean-ast-wasm`)
+# lean-analyzer
 
-Ultra-fast, in-process abstract interpreter and AST / `.ilean` evaluator for Lean 4, compiled to WebAssembly (`wasm32-unknown-unknown`) and native Rust.
+Ultra-fast, in-process abstract interpreter, relational domain solver, and zero-copy `.ilean` indexer for Lean 4, compiled to WebAssembly (`wasm32-unknown-unknown`) and native Rust.
 
-## Features
+For detailed usage, API reference, and examples across Rust, JavaScript/TypeScript, and Lean 4, see [USER_GUIDE.md](USER_GUIDE.md).
 
-- **Formally Verified (Tier 7)**: Abstract sign lattice, closed `NatInterval`, affine `NatCongruence`, and Granger singleton reduction verified in Lean 4 (`EASCI.Foundations.CS.AbstractInterpretation`) with 0 `sorry` and 0 axioms beyond standard Lean kernels.
-- **Zero GC Overhead & Ultra-Small Footprint**: Compiled `wasm32-unknown-unknown` binary (~32 KB) with zero external runtime dependencies.
-- **Single-Cycle Bitset Lattices**: Sign abstraction ($0, +, -, \ge 0, \le 0, \neq 0, \top, \bot$) represented as 3-bit bitmasks where lattice join $\sqcup$ is bitwise OR and meet $\sqcap$ is bitwise AND.
-- **Affine Congruence Domain (`congruence.rs`)**: Granger (1989) strided congruence domain $s\mathbb{N} + o$ with GCD join, Extended-GCD Chinese Remainder Theorem (CRT) meet, transfer functions (`add`, `nat_sub`, `mul`, `nat_mod`, `nat_shl`, `nat_succ`, `nat_pred`), and mutual Granger interval-congruence reduction (`reduce_interval_congruence`).
-- **Relational Zone / Difference-Bound Matrix Domain (`zone.rs`)**: Mine (2001) Difference-Bound Matrix tracking pairwise bounds $v_i - v_j \le c$ across up to 8 local variables plus the zero reference $v_0 = 0$, with incremental $O(V^2)$ shortest-path closure, Floyd-Warshall canonical closure, and structural recursion / `decreasing_by` termination discharge (`verify_strict_decrease`, `verify_bounded_decrease`).
-- **AST Constant-Pool Threshold Widening & Backward Guard Refinement (`interpreter.rs`)**: Automatically harvests literal constants and guard thresholds ($c-1, c, c+1$) from Lean ASTs (`LeanExpr::harvest_constants`) to guide threshold widening, and refines bound variables backward through arithmetic guards (`x + c < k` refines `x`).
-- **Microsecond `.ilean` Streaming Parser**: Resolves Lean 4 symbols, usages, and declaration ranges directly in memory in sub-millisecond time, replacing slow JSON-RPC roundtrips to `lake serve`.
-- **WASM & ES Module Bridge**: Drop-in bindings for Node.js, browsers, VS Code extensions, `lean4-lsp-mcp`, and `pi-lens` via `src/js/modules/lean_analyzer_bridge.js`.
+## Key Features
 
-## Building
+- **Formally Verified Soundness (`lean/`)**: The Galois concretization (`gamma`) and transfer soundness for the 3-bit sign lattice, closed `NatInterval`, affine `NatCongruence`, Granger reduction, Difference-Bound Matrix (`ZoneBound`), and two-variable `NatOctagon2` strong closure are mechanically proved in Lean 4 (`LeanAnalyzer.AbstractInterpretation`) with zero `sorry` and zero Mathlib dependency.
+- **Zero-Dependency WASM Binary (~49 KB)**: Compiles to `wasm32-unknown-unknown` (`data/lean_analyzer.wasm`) with 22 `extern "C"` exports and an ES module wrapper (`js/lean_analyzer_bridge.js`).
+- **Non-Relational & Relational Abstract Domains**:
+  - **Bitset Sign Lattice (`lattice.rs`)**: 3-bit bitmasks (`Zero=1`, `Positive=2`, `Negative=4`) where join is bitwise OR and meet is bitwise AND.
+  - **Natural Intervals (`nat_interval.rs`)**: Closed intervals `[min, max]` over `Nat` with saturation at `i64::MAX` (`+inf`), Warren's *Hacker's Delight* (Ch. 4) exact bitwise `and`/`or`/`xor` interval bounds, and single-quotient-bucket exact `nat_mod`.
+  - **Strided Congruences (`congruence.rs`)**: Granger (1989) arithmetic progressions `stride * Nat + offset` with GCD join, Extended-GCD Chinese Remainder Theorem (CRT) meet, and mutual interval-congruence reduction (`reduce_interval_congruence`).
+  - **Zone / Difference-Bound Matrix (`zone.rs`)**: Mine (2001) relational bounds `v_i - v_j <= c` with incremental `O(V^2)` shortest-path closure, Floyd-Warshall closure, and Lean `decreasing_by` termination discharge (`verify_strict_decrease`, `verify_bounded_decrease`).
+  - **Octagon Domain (`octagon.rs`)**: Mine (2006) relational bounds `+/- v_i +/- v_j <= c` over `2N x 2N` coherent DBMs with strong closure (`even_tighten` + `strengthen`).
+  - **Bourdoncle Weak Topological Ordering & Trace Partitioning (`wto.rs`, `interpreter.rs`)**: Hierarchical SCC decomposition with component-head threshold widening (`harvest_constants`) and bounded branch-trace partitioning (`eval_expr_trace_partitioned`).
+- **Differential Validation Against Lean 4.34.1 (`tests/test_lean_oracle.rs`)**: Checked against a 20,311-row ground-truth oracle generated directly by Lean (`tools/gen_oracle.lean`): 41,292 point exactness checks, 4,304,660 interval soundness checks, and 127,999 congruence/reduction checks.
+- **Microsecond `.ilean` Streaming Indexer (`batch_scanner.rs`, `ilean_parser.rs`)**: Zero-copy memory-mapped `.ilean` symbol, module, and declaration range scanner with incremental mtime tracking (`DaemonIndexTracker`).
+
+## Quick Start
 
 ```bash
-# Native Rust build & test (72 tests across 6 suites; includes standalone .ilean fixtures)
+# 1. Run the Rust test and differential oracle suite (72 tests across 6 suites)
 cargo test
 
-# Verify Tier-7 Lean 4 soundness proofs (zero Mathlib dependency, compiles in ~1.5s)
+# 2. Verify the Lean 4 formal soundness proofs (compiles in ~1.5s, no Mathlib needed)
 cd lean && lake build
 
-# Compile to WebAssembly & sync to downstream consumers
+# 3. Build the WebAssembly binary (data/lean_analyzer.wasm)
 bash scripts/build_and_sync_wasm.sh
 ```
 
-## JavaScript / TypeScript Integration
-
-Use the high-level ES module wrapper in `src/js/modules/lean_analyzer_bridge.js` or call the C/WASM ABI exports directly:
+## JavaScript / TypeScript Usage
 
 ```javascript
-import { loadLeanAnalyzerBridge } from "../../src/js/modules/lean_analyzer_bridge.js";
+import { loadLeanAnalyzerBridge } from "./js/lean_analyzer_bridge.js";
 
 const bridge = await loadLeanAnalyzerBridge();
 
@@ -42,62 +45,14 @@ console.log(bridge.joinSigns(1, 2)); // 3
 console.log(bridge.reduceIntervalCongruence(1, 299, 100, 0));
 // { min: 100, max: 200, stride: 100, offset: 0 }
 
-// 3. Zone DBM termination check: n >= 1 and n' - n <= -1 implies 0 <= n' < n
-console.log(bridge.checkZoneTermination(1, -1)); // true
+// 3. Zone DBM termination check: i - n <= -1 and step = 1 implies n - (i + 1) < n - i
+console.log(bridge.checkZoneSubDecreasing(-1, 1)); // 2 (AbstractBool.True)
+
+// 4. Two-variable Octagon reduction: v0 in [30, 100], v1 in [0, 100], v0 + v1 == 100
+console.log(bridge.reduceOctagonTwoVars(30, 100, 0, 100, 100, 100));
+// [ { min: 30, max: 100 }, { min: 0, max: 70 } ]
 ```
-
-## Benchmarking
-
-```bash
-cargo run --release -p lean-analyzer --example corpus_bench -- [DIR] [RUNS]
-```
-
-Measured 2026-10-20 on the EASCI corpus (`docs/easci/lean/.lake/build/lib/lean/EASCI`):
-654 `.ilean` files (16.2 MB) scanned in a median 59 ms (275 MB/s; cold run 75 ms),
-15,522 symbols across 654 modules, index estimate 4.7 MiB, and exact lookup at
-p50 130 ns / p99 290 ns. Re-run before quoting; numbers depend on the build state.
-
-Incremental daemon indexing (`DaemonIndexTracker`, 60-file sample, release build):
-cold index 3.7 ms, idle poll 0.17 ms, single-file re-index 0.30 ms.
-
-`tests/test_corpus_gate.rs` fails the build when the scan median exceeds 600 ms, lookup
-p99 exceeds 50 us, or a single-file re-index exceeds 250 ms (about 10x the baselines).
-`tests/test_interval_soundness.rs` checks every Nat interval transfer function
-exhaustively against Lean semantics on small ranges.
-
-## Upstream Integration
-
-- **`lean4-lsp-mcp`**: High-speed symbol navigation and static diagnostics cache.
-- **`pi-lens`**: Low-latency AST analysis avoiding full language-server restarts.
-- **`Verso` & `LeanBlueprint`**: Fast static dependency extraction for documentation.
 
 ## License
 
-Apache-2.0
-
-## Differential validation against Lean core
-
-Every modelled operator is checked against Lean 4.34.1 (the `lean-toolchain` pin) by
-`tests/test_lean_oracle.rs`. The oracle table `tests/fixtures/lean_oracle.tsv` (20,311 rows)
-is generated by Lean itself: `bash tools/lean_analyzer_oracle/regen.sh` (one-shot
-`lake env lean --run`).
-
-- Point inputs below `i64::MAX` must be exact (41,292 checks); all other cases must be sound
-  (the Lean result is never excluded), over dense intervals and `[lo, +inf)` intervals
-  (4,304,660 checks), plus 127,999 congruence and Granger interval-congruence reduction
-  checks against the same Lean 4.34.1 oracle.
-- Convention: `i64::MAX` is +infinity for naturals. Values `>= 2^63-1` saturate to it.
-- Covered: binary `add`, `sub`, `mul`, `div`, `mod`, `min`, `max`, `pow`, `&&&` (`Nat.land`,
-  `AndOp.and`, `HAnd.hAnd`), `|||` (`Nat.lor`, `OrOp.or`, `HOr.hOr`), `^^^` (`Nat.xor`,
-  `XorOp.xor`, `HXor.hXor`), `<<<` (`Nat.shiftLeft`, `ShiftLeft.shiftLeft`,
-  `HShiftLeft.hShiftLeft`), `>>>` (`Nat.shiftRight`, `ShiftRight.shiftRight`,
-  `HShiftRight.hShiftRight`), unary `Nat.succ` and `Nat.pred`, constant `Nat.zero`, relations
-  `le`, `lt`, `ge`, `gt`, `eq`, `ne`, `Bool` `and`/`or`/`xor`/`not` and equality, and
-  `ite`/`cond`/`bif` with relational and backward arithmetic guard refinement on bound variables.
-- Bitwise `and`/`or`/`xor` intervals use Warren's *Hacker's Delight* (Ch. 4) bit-propagation
-  algorithms to compute exact minimum and maximum bounds over any finite interval pair;
-  `nat_mod` returns exact `[a.min % k, a.max % k]` when `b = [k, k]` falls in a single
-  quotient bucket (`a.min / k == a.max / k`).
-- `Nat.bge`, `Nat.bgt`, `Nat.bne`, `BNe.bne` are analyzer aliases, not Lean constants.
-- The grid is finite (not all inputs); `neg` stays Top because `Nat` has no `Neg`.
-
+Apache-2.0. See [LICENSE](LICENSE).

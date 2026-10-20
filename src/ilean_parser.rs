@@ -1,7 +1,7 @@
-//! crates/lean-analyzer/src/ilean_parser.rs
+//! src/ilean_parser.rs
 //! Zero-allocation / zero-dependency fast streaming parser for Lean 4 `.ilean` metadata.
 //! Provides instant symbol resolution and hover/definition lookups in WASM.
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ILeanDecl<'a> {
@@ -316,17 +316,17 @@ mod tests {
 
     #[test]
     fn test_parse_sample_ilean() {
-        let json = br#"{"decls":{"EASCI.FinalCheck.easci_master_verified":[58,0,102,44,65,8,65,29]},"directImports":[["EASCI",false,false,false]],"module":"FinalCheck","references":{"foo":{"definition":null,"usages":[[1,2,3,4]]}},"version":5}"#;
+        let json = br#"{"decls":{"Mathlib.Data.Nat.Basic.add_comm_verified":[58,0,102,44,65,8,65,29]},"directImports":[["Init",false,false,false]],"module":"FinalCheck","references":{"foo":{"definition":null,"usages":[[1,2,3,4]]}},"version":5}"#;
         let mut parser = ILeanParser::new(json);
         let summary = parser.parse().expect("Failed to parse ilean JSON");
 
         assert_eq!(summary.version, 5);
         assert_eq!(summary.module, "FinalCheck");
-        assert_eq!(summary.direct_imports, vec!["EASCI"]);
+        assert_eq!(summary.direct_imports, vec!["Init"]);
         assert_eq!(summary.decls.len(), 1);
         assert_eq!(
             summary.decls[0].name,
-            "EASCI.FinalCheck.easci_master_verified"
+            "Mathlib.Data.Nat.Basic.add_comm_verified"
         );
         assert_eq!(summary.decls[0].range, [58, 0, 102, 44]);
         assert_eq!(summary.decls[0].def_range, [65, 8, 65, 29]);
@@ -334,12 +334,12 @@ mod tests {
 
         let hit = ILeanParser::find_decl_at(&summary, 65, 10);
         assert!(hit.is_some());
-        assert_eq!(hit.unwrap().name, "EASCI.FinalCheck.easci_master_verified");
+        assert_eq!(hit.unwrap().name, "Mathlib.Data.Nat.Basic.add_comm_verified");
 
         let miss = ILeanParser::find_decl_at(&summary, 105, 0);
         assert!(miss.is_none());
 
-        let by_name = ILeanParser::find_decl_by_name(&summary, "EASCI.FinalCheck.easci_master_verified");
+        let by_name = ILeanParser::find_decl_by_name(&summary, "Mathlib.Data.Nat.Basic.add_comm_verified");
         assert!(by_name.is_some());
         let decl = by_name.unwrap();
 

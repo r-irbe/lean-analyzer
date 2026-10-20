@@ -1,4 +1,4 @@
-//! crates/lean-analyzer/src/zone.rs
+//! src/zone.rs
 //! Compact Difference-Bound Matrix (Zone) relational abstract domain over `Nat`
 //! (Mine 2001/2006; Cousot 2021 Ch. 51; Simon 2008 Ch. 8).
 //!
@@ -11,7 +11,7 @@
 //! for sub-millisecond incremental closure and discharge of Lean 4 termination obligations
 //! (`decreasing_by` / `termination_by`, e.g., proving `n - (i + 1) < n - i` under `i < n`).
 //!
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 use crate::lattice::{AbstractBool, IntervalBound};
 use crate::nat_interval::INF;

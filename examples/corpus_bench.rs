@@ -1,9 +1,9 @@
-//! crates/lean-analyzer/examples/corpus_bench.rs
+//! examples/corpus_bench.rs
 //! End-to-end corpus benchmark: cold/warm scan latency, throughput, lookup
 //! latency percentiles, and resident-set growth over real .ilean files.
 //!
 //! Usage: cargo run --release -p lean-analyzer --example corpus_bench -- [DIR] [RUNS]
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 use lean_analyzer::batch_scanner::BatchILeanScanner;
 use std::path::{Path, PathBuf};
@@ -43,7 +43,7 @@ fn pct(sorted: &[Duration], p: f64) -> Duration {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let default = "docs/easci/lean/.lake/build/lib/lean/EASCI";
+    let default = "tests/fixtures/ilean";
     let root = PathBuf::from(args.get(1).map(String::as_str).unwrap_or(default));
     let runs: usize = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(5);
     if !root.exists() {

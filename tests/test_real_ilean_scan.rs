@@ -1,27 +1,26 @@
-//! crates/lean-analyzer/tests/test_real_ilean_scan.rs
 //! Integration test and zero-copy mmap throughput benchmark for BatchILeanScanner.
-//! Strict 7-bit ASCII only (INV-001).
 
 use lean_analyzer::batch_scanner::BatchILeanScanner;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 #[test]
 fn test_corpus_ilean_scan_benchmark() {
-    let p1 = Path::new("docs/easci/lean/.lake/build/lib/lean/EASCI");
-    let p2 = Path::new("../../docs/easci/lean/.lake/build/lib/lean/EASCI");
-    let p3 = Path::new("tests/fixtures/ilean");
-    let p4 = Path::new("crates/lean-analyzer/tests/fixtures/ilean");
-    let ir_dir = if p1.exists() {
+    let env_dir = std::env::var("LEAN_ANALYZER_CORPUS_DIR").ok().map(PathBuf::from);
+    let p1 = Path::new("tests/fixtures/ilean");
+    let p2 = Path::new("crates/lean-analyzer/tests/fixtures/ilean");
+    let ir_dir: &Path = if let Some(ref d) = env_dir {
+        if d.exists() {
+            d.as_path()
+        } else {
+            return;
+        }
+    } else if p1.exists() {
         p1
     } else if p2.exists() {
         p2
-    } else if p3.exists() {
-        p3
-    } else if p4.exists() {
-        p4
     } else {
-        eprintln!("Corpus lib/lean dir does not exist, skipping real scan test.");
+        eprintln!("Fixture .ilean dir does not exist, skipping scan test.");
         return;
     };
 
@@ -49,6 +48,6 @@ fn test_corpus_ilean_scan_benchmark() {
         assert!(count > 0);
     }
 
-    let prefix_res = scanner.search_by_prefix("EASCI.");
-    println!("Declarations starting with 'EASCI.': {}", prefix_res.len());
+    let prefix_res = scanner.search_by_prefix("SampleProject.");
+    println!("Declarations starting with 'SampleProject.': {}", prefix_res.len());
 }

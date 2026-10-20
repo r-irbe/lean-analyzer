@@ -1,1 +1,1 @@
-{"version":3,"module":"EASCI.FixtureMod11","directImports":["Init"],"decls":{"EASCI.FixtureMod11.thm_11":[11,0,11,20,11,0,11,10],"EASCI.FixtureMod11.helper_11":[10,0,10,15,10,0,10,8]}}
+{"version":3,"module":"SampleProject.FixtureMod11","directImports":["Init"],"decls":{"SampleProject.FixtureMod11.thm_11":[11,0,11,20,11,0,11,10],"SampleProject.FixtureMod11.helper_11":[10,0,10,15,10,0,10,8]}}

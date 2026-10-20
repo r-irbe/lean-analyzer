@@ -1,6 +1,6 @@
-//! crates/lean-analyzer/src/ops.rs
+//! src/ops.rs
 //! Unary and binary operator tables: maps Lean (and analyzer-alias) names to transfer functions.
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 use crate::lattice::{AbstractBool, AbstractSign, AbstractState, IntervalBound};
 use crate::nat_interval::INF;

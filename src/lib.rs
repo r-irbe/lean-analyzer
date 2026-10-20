@@ -1,4 +1,4 @@
-//! crates/lean-analyzer/src/lib.rs
+//! src/lib.rs
 //! High-Speed In-Process Abstract Interpreter and AST Evaluator for Lean 4.
 //!
 //! Provides:
@@ -7,7 +7,7 @@
 //! - In-process abstract evaluation and fixpoint analysis.
 //! - Zero-dependency WASM / C ABI exports.
 //!
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 pub mod ast;
 #[cfg(not(target_arch = "wasm32"))]
@@ -180,7 +180,7 @@ mod tests {
         assert_eq!(buf[1], 35);
 
         // Test ilean wasm exports
-        let json = br#"{"decls":{"EASCI.Test":[10,0,20,5,12,0,12,10]},"directImports":[],"module":"EASCI.Test","references":{},"version":5}"#;
+        let json = br#"{"decls":{"SampleProject.Test":[10,0,20,5,12,0,12,10]},"directImports":[],"module":"SampleProject.Test","references":{},"version":5}"#;
         let mut ver = 0u32;
         let mut decls_count = 0u32;
         let mut imp_count = 0u32;
@@ -206,9 +206,9 @@ mod tests {
             name_buf.as_mut_ptr(),
             name_buf.len(),
         );
-        assert_eq!(written, 10);
+        assert_eq!(written, "SampleProject.Test".len() as u32);
         let name_str = std::str::from_utf8(&name_buf[..written as usize]).unwrap();
-        assert_eq!(name_str, "EASCI.Test");
+        assert_eq!(name_str, "SampleProject.Test");
     }
 
     #[test]

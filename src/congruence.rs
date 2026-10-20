@@ -1,4 +1,4 @@
-//! crates/lean-analyzer/src/congruence.rs
+//! src/congruence.rs
 //! Cartesian congruence abstract domain for natural numbers (Granger 1989; Cousot 2021 Ch. 40).
 //!
 //! Represents residue classes `stride * N + offset` (written `offset (mod stride)`),
@@ -14,7 +14,7 @@
 //!   tightening interval endpoints to the nearest matching residue class and collapsing
 //!   single-point intervals to exact singleton congruences.
 //!
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 use crate::lattice::{AbstractBool, IntervalBound};
 use crate::nat_interval::INF;
@@ -645,7 +645,7 @@ mod tests {
 
     #[test]
     fn test_granger_interval_congruence_reduction() {
-        // EASCI scaled-integer simplex grid: values in [1, 299] with 0 (mod 100) -> [100, 200]
+        // Scaled-integer grid: values in [1, 299] with 0 (mod 100) -> [100, 200]
         let iv = IntervalBound::new(1, 299);
         let cg = NatCongruence::new(100, 0);
         let (r_iv, r_cg) = reduce_interval_congruence(iv, cg).expect("non-empty");

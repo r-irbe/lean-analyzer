@@ -1,7 +1,6 @@
-# crates/lean-analyzer/Cargo.toml
+# Cargo.toml
 # High-speed in-process abstract interpreter and AST evaluator for Lean 4
 # Compiles to both native rlib and WebAssembly cdylib (wasm32-unknown-unknown).
-# Strict 7-bit ASCII only (INV-001).
 
 [package]
 name = "lean-analyzer"
@@ -9,7 +8,8 @@ version = "0.1.0"
 edition = "2021"
 description = "High-speed in-process abstract interpreter and AST evaluator for Lean 4"
 license = "Apache-2.0"
-authors = ["EASCI / tacit-mui Authors"]
+repository = "https://github.com/r-irbe/lean-analyzer"
+authors = ["Radu Irbe"]
 
 [lib]
 crate-type = ["rlib", "cdylib"]

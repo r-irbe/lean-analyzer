@@ -1,10 +1,10 @@
-//! crates/lean-analyzer/src/mmap_reader.rs
+//! src/mmap_reader.rs
 //! High-performance memory-mapped zero-copy reader for Lean 4 artifacts.
 //! Inspired by llama-mmap.h / llama-mmap.cpp techniques in llama.cpp:
 //! - Direct memory mapping avoids copying multi-megabyte .ilean and .olean files into heap.
 //! - Read-only page-aligned buffer mapping.
 //! - Zero heap allocation during AST and symbol queries.
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 use std::fs::File;
 use std::io;

@@ -1,1 +1,1 @@
-{"version":3,"module":"EASCI.FixtureMod6","directImports":["Init"],"decls":{"EASCI.FixtureMod6.thm_6":[6,0,6,20,6,0,6,10],"EASCI.FixtureMod6.helper_6":[10,0,10,15,10,0,10,8]}}
+{"version":3,"module":"SampleProject.FixtureMod6","directImports":["Init"],"decls":{"SampleProject.FixtureMod6.thm_6":[6,0,6,20,6,0,6,10],"SampleProject.FixtureMod6.helper_6":[10,0,10,15,10,0,10,8]}}

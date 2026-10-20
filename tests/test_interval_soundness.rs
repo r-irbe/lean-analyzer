@@ -1,7 +1,7 @@
-//! crates/lean-analyzer/tests/test_interval_soundness.rs
+//! tests/test_interval_soundness.rs
 //! Exhaustive soundness, optimality, and lattice monotonicity checks of the
 //! natural-number interval transfer functions against Lean 4 semantics on
-//! small ranges. Strict 7-bit ASCII only (INV-001).
+//! small ranges. 
 
 use lean_analyzer::lattice::AbstractBool;
 use lean_analyzer::IntervalBound as I;

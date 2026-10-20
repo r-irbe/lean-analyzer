@@ -1,7 +1,7 @@
 //! Differential validation of every modelled operator against Lean 4 core.
 //! The oracle table is produced by `bash tools/lean_analyzer_oracle/regen.sh`.
 //! Point inputs below i64::MAX must be exact; everything else must be sound
-//! (never exclude the value Lean computes). Strict 7-bit ASCII only (INV-001).
+//! (never exclude the value Lean computes). 
 
 use lean_analyzer::ast::LeanExpr;
 use lean_analyzer::congruence::{reduce_interval_congruence, NatCongruence};
@@ -166,10 +166,7 @@ fn to_bool_state(b: bool) -> AbstractState {
 fn oracle_matches_pinned_toolchain() {
     let o = load();
     let local_pin = concat!(env!("CARGO_MANIFEST_DIR"), "/lean/lean-toolchain");
-    let mono_pin = concat!(env!("CARGO_MANIFEST_DIR"), "/../../docs/easci/lean/lean-toolchain");
-    let pin = std::fs::read_to_string(local_pin)
-        .or_else(|_| std::fs::read_to_string(mono_pin))
-        .unwrap();
+    let pin = std::fs::read_to_string(local_pin).unwrap();
     assert!(pin.contains(&o.version), "fixture {} vs pin {}", o.version, pin.trim());
 }
 

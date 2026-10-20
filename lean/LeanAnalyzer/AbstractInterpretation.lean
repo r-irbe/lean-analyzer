@@ -1,6 +1,6 @@
 /-!
 LeanAnalyzer.AbstractInterpretation -- Formal Abstract Interpretation & Self-Bootstrapping.
-Strict 7-bit ASCII only (INV-001). Zero sorry constraint.
+ Zero sorry constraint.
 -/
 
 set_option autoImplicit false
@@ -158,7 +158,7 @@ impl AbstractSign {
 end AbstractSign
 
 /-!
-## Wave 2 & Tier 7: Verified NatInterval, NatCongruence, and Granger Reduction
+## Verified NatInterval, NatCongruence, and Granger Reduction
 
 We mechanize the Galois concretization `gamma` and soundness of the core
 transfer functions for:
@@ -346,14 +346,14 @@ theorem reduce_point_sound (iv : NatInterval) (cg : NatCongruence) (n : Nat)
 end NatCongruence
 
 /-!
-## Wave 4 & Wave 5: Threshold Widening, Zone DBM Closure, and Diagnostic Certificates
+## : Threshold Widening, Zone DBM Closure, and Diagnostic Certificates
 
 1. `NatInterval.widenThreshold`: threshold-stepped widening (`widen_with_thresholds(T)`,
    Blanchet et al. 2003 / Mine 2017) preserves `gamma` for both `prev` and `next` whenever
    the threshold `t` upper-bounds `next.hi`.
 2. `ZoneBound`: Difference-Bound Matrix (DBM) upper bound `x - y <= c` (Mine 2001) and
    Floyd-Warshall transitive closure soundness `(x - y <= c1) /\ (y - z <= c2) -> (x - z <= c1 + c2)`.
-3. `NatInterval.natSubTruncation_cert_sound`: formal proof of the Wave 5 `NatSubTruncation`
+3. `NatInterval.natSubTruncation_cert_sound`: formal proof of the `NatSubTruncation`
    static diagnostic certificate: if `a.hi <= b.lo`, then for every `x in gamma(a)` and
    `y in gamma(b)`, natural subtraction `x - y = 0`.
 -/
@@ -380,7 +380,7 @@ theorem widenThreshold_sound_next (prev next : NatInterval) (t n : Nat)
   dsimp
   split <;> split <;> omega
 
-/-- Wave 5 `NatSubTruncation` diagnostic certificate soundness:
+/-- `NatSubTruncation` diagnostic certificate soundness:
 when `a.hi <= b.lo`, any concrete `x in gamma(a)` and `y in gamma(b)` satisfy `x - y = 0`. -/
 theorem natSubTruncation_cert_sound (a b : NatInterval) (x y : Nat)
     (h_cert : a.hi <= b.lo)
@@ -390,7 +390,7 @@ theorem natSubTruncation_cert_sound (a b : NatInterval) (x y : Nat)
   unfold gamma at hx hy
   omega
 
-/-- Wave 5 `DivisionByZeroGuardProven` diagnostic certificate soundness:
+/-- `DivisionByZeroGuardProven` diagnostic certificate soundness:
 when `1 <= b.lo`, any concrete `y in gamma(b)` satisfies `y != 0`. -/
 theorem divByZeroGuard_cert_sound (b : NatInterval) (y : Nat)
     (h_guard : 1 <= b.lo)
@@ -423,7 +423,7 @@ theorem compose_sound (b1 b2 : ZoneBound) (x y z : Int)
   dsimp
   omega
 
-/-- Wave 4 Zone termination check soundness: if `next_x - x <= delta` with `delta <= -1`
+/-- Zone termination check soundness: if `next_x - x <= delta` with `delta <= -1`
 and `1 <= x`, then `0 <= next_x` and `next_x < x` (strict well-founded decrease). -/
 theorem check_sub_decreasing_sound (b : ZoneBound) (x next_x : Int)
     (h_zone : gamma b next_x x)
@@ -435,7 +435,7 @@ theorem check_sub_decreasing_sound (b : ZoneBound) (x next_x : Int)
 end ZoneBound
 
 /-!
-## Wave 6: Octagon Relational Domain (`+` or `-` `x_i` and `x_j` `<= c`, Mine 2006 / Pelleau 2015)
+## : Octagon Relational Domain (`+` or `-` `x_i` and `x_j` `<= c`, Mine 2006 / Pelleau 2015)
 
 1. `OctagonBound`: coherent difference/sum bounds `x + y <= sum_hi`, `sum_lo <= x + y`,
    and `x - y <= diff_hi` over `Nat`.

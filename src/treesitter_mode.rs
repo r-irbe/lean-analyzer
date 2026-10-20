@@ -1,8 +1,8 @@
-//! crates/lean-analyzer/src/treesitter_mode.rs
+//! src/treesitter_mode.rs
 //! Tree-Sitter mode for Lean 4 AST & CST analysis.
 //! Translates Tree-Sitter Concrete Syntax Tree (CST) nodes into verified LeanExpr AST
 //! and runs abstract interpretation directly on syntax nodes.
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 use crate::ast::LeanExpr;
 use crate::interpreter::LeanAbstractInterpreter;

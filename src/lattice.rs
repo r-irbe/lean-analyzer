@@ -1,6 +1,6 @@
-//! crates/lean-analyzer/src/lattice.rs
+//! src/lattice.rs
 //! High-speed bitset abstract lattice operations for Lean 4 terms.
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 /// Bitset encoding of abstract numeric signs:
 /// - Bit 0: Zero

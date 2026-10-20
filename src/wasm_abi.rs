@@ -1,6 +1,6 @@
-//! crates/lean-analyzer/src/wasm_abi.rs
+//! src/wasm_abi.rs
 //! Zero-overhead C and WebAssembly FFI bindings for lean-analyzer.
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 use crate::lattice::{AbstractBool, AbstractSign, IntervalBound};
 
@@ -536,7 +536,7 @@ pub extern "C" fn lean_analyzer_zone_check_sub_decreasing(
     z.check_nat_sub_decreasing(1, 2, 3).as_u8()
 }
 
-/// Wave 6 Octagon two-variable relational reduction (`v0 in [min0, max0]`, `v1 in [min1, max1]`,
+/// Octagon two-variable relational reduction (`v0 in [min0, max0]`, `v1 in [min1, max1]`,
 /// `sum_lo <= v0 + v1 <= sum_hi`, `v0 - v1 <= diff_hi`).
 /// Writes `[min0', max0', min1', max1']` into `out_buf` (4 `i64` elements) and returns `1`,
 /// or returns `0` if the octagon is infeasible (`Bottom`).
@@ -622,7 +622,7 @@ mod tests {
         // Step = 0 => False (1)
         assert_eq!(lean_analyzer_zone_check_sub_decreasing(-1, 0), 1);
 
-        // Wave 6 Octagon: v0 in [30, 100], v1 in [0, 100], v0 + v1 == 100 => v0 in [30, 100], v1 in [0, 70]
+        // Octagon: v0 in [30, 100], v1 in [0, 100], v0 + v1 == 100 => v0 in [30, 100], v1 in [0, 70]
         assert_eq!(
             lean_analyzer_octagon_reduce_two_vars(
                 30,

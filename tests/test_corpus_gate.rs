@@ -1,9 +1,5 @@
-//! crates/lean-analyzer/tests/test_corpus_gate.rs
-//! Performance regression gate over the real EASCI .ilean corpus plus timing
-//! of incremental daemon re-indexing. Thresholds are ~10x the 2026-10-20
-//! baseline (scan median 59 ms, lookup p99 290 ns) so they trip on real
-//! regressions, not machine noise. Skips when the corpus is not built.
-//! Strict 7-bit ASCII only (INV-001).
+//! Performance regression gate over .ilean corpus scanning plus timing
+//! of incremental daemon re-indexing.
 
 use lean_analyzer::batch_scanner::{BatchILeanScanner, DaemonIndexTracker};
 use std::fs;
@@ -15,15 +11,16 @@ const LOOKUP_P99_BUDGET: Duration = Duration::from_micros(50);
 const INCREMENTAL_BUDGET: Duration = Duration::from_millis(250);
 
 fn corpus() -> Option<PathBuf> {
-    [
-        "docs/easci/lean/.lake/build/lib/lean/EASCI",
-        "../../docs/easci/lean/.lake/build/lib/lean/EASCI",
-        "tests/fixtures/ilean",
-        "crates/lean-analyzer/tests/fixtures/ilean",
-    ]
-    .iter()
-    .map(PathBuf::from)
-    .find(|p| p.exists())
+    if let Ok(env_p) = std::env::var("LEAN_ANALYZER_CORPUS_DIR") {
+        let p = PathBuf::from(env_p);
+        if p.exists() {
+            return Some(p);
+        }
+    }
+    ["tests/fixtures/ilean", "crates/lean-analyzer/tests/fixtures/ilean"]
+        .iter()
+        .map(PathBuf::from)
+        .find(|p| p.exists())
 }
 
 fn ilean_files(root: &Path, out: &mut Vec<PathBuf>) {

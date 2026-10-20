@@ -1,8 +1,8 @@
-//! crates/lean-analyzer/src/nat_interval.rs
+//! src/nat_interval.rs
 //! Natural-number interval transfer functions (Lean 4 semantics).
 //! Convention: `i64::MAX` means +infinity. A bound equal to INF stands for
 //! "any value >= i64::MAX". Validated against a Lean-generated oracle table.
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 use crate::lattice::{AbstractBool, IntervalBound};
 

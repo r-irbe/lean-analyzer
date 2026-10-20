@@ -1,4 +1,4 @@
-//! crates/lean-analyzer/src/wto.rs
+//! src/wto.rs
 //! Bourdoncle Weak Topological Ordering (WTO) and Bounded Trace Partitioning
 //! for Lean 4 abstract interpretation.
 //!
@@ -8,7 +8,7 @@
 //! - Arceri et al. (2023), *Challenges of Software Verification*, Ch. 1 (`ARCERI2023 s1.3 p1`).
 //! - Rival & Mauborgne (2007), "The trace partitioning abstract domain", ACM TOPLAS.
 //!
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 use crate::lattice::AbstractState;
 use std::collections::BTreeMap;

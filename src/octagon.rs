@@ -1,4 +1,4 @@
-//! crates/lean-analyzer/src/octagon.rs
+//! src/octagon.rs
 //! Coherent Difference-Bound Matrix for the Octagon Relational Domain over `Nat`
 //! (Mine 2006 "The Octagon Abstract Domain"; Cousot 2021 Ch. 42 & 51; Pelleau 2015 Ch. 3).
 //!
@@ -26,7 +26,7 @@
 //! 2. Unary even-tightening: `m[i][bar(i)] = 2 * floor(m[i][bar(i)] / 2)`
 //! 3. Strengthening: `m[i][j] = min(m[i][j], (m[i][bar(i)] + m[bar(j)][j]) / 2)`
 //!
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 use crate::lattice::{AbstractBool, IntervalBound};
 use crate::nat_interval::INF;

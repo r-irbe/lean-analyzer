@@ -1,6 +1,6 @@
-//! crates/lean-analyzer/src/ast.rs
+//! src/ast.rs
 //! Core Lean 4 expression representation for in-process abstract interpretation.
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LeanExpr {
@@ -139,8 +139,8 @@ impl LeanExpr {
     }
 
     /// Harvests sorted threshold checkpoints from an expression (literal constants `c`, `c - 1`, `c + 1`
-    /// plus standard EASCI scaled-integer checkpoints `{0, 1, 100, 10000}`) for threshold widening
-    /// (`MOLLER-SPA s5.12 p1`, `RIVAL-YI s6.1 p1`).
+    /// plus standard scaled-integer checkpoints `{0, 1, 100, 10000}`) for threshold widening
+    /// (`Moller & Schwartzbach 2018`, `Rival & Yi 2020`).
     pub fn collect_nat_thresholds(&self) -> Vec<i64> {
         let mut lits = vec![0i64, 1, 100, 10_000];
         self.collect_nat_literals(&mut lits);

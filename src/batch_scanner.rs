@@ -1,7 +1,7 @@
-//! crates/lean-analyzer/src/batch_scanner.rs
+//! src/batch_scanner.rs
 //! High-performance zero-copy batch scanner for Lean 4 .ilean metadata artifacts.
 //! Leverages MmapReader and page-aligned memory mapping from llama.cpp / rust-mmap-engine.
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 use std::collections::HashMap;
 use std::fs;
@@ -78,7 +78,7 @@ impl BatchILeanScanner {
     }
 
     /// Discovers all Lean package roots (directories containing lakefile.lean or lakefile.toml)
-    /// under a workspace root (e.g. packages/*, docs/easci/lean).
+    /// under a workspace root (e.g. root, lean/, packages/*).
     pub fn discover_all_package_roots(workspace_root: &Path) -> Vec<PathBuf> {
         let mut roots = Vec::new();
         if workspace_root.join("lakefile.lean").exists()
@@ -100,16 +100,6 @@ impl BatchILeanScanner {
                     }
                 }
             }
-        }
-
-        // Check docs/easci/lean
-        let easci_lean = workspace_root.join("docs").join("easci").join("lean");
-        if easci_lean.is_dir()
-            && (easci_lean.join("lakefile.lean").exists()
-                || easci_lean.join("lakefile.toml").exists())
-            && !roots.contains(&easci_lean)
-        {
-            roots.push(easci_lean);
         }
 
         // Check standalone lean/ directory
@@ -516,14 +506,14 @@ mod tests {
     #[test]
     fn test_batch_scanner_index_buffer() {
         let mut scanner = BatchILeanScanner::new();
-        let sample = br#"{"version": 3, "module": "EASCI.Test", "directImports": [], "decls": {"test_thm": [10, 0, 10, 8, 10, 0, 10, 8], "test_helper": [12, 0, 12, 11, 12, 0, 12, 11]}}"#;
+        let sample = br#"{"version": 3, "module": "SampleProject.Test", "directImports": [], "decls": {"test_thm": [10, 0, 10, 8, 10, 0, 10, 8], "test_helper": [12, 0, 12, 11, 12, 0, 12, 11]}}"#;
         scanner.index_mmap_buffer(Path::new("/dummy/Test.ilean"), sample);
 
         assert_eq!(scanner.total_symbols(), 2);
         assert_eq!(scanner.total_modules(), 1);
 
         let decl = scanner.lookup("test_thm").expect("Symbol should exist");
-        assert_eq!(decl.module, "EASCI.Test");
+        assert_eq!(decl.module, "SampleProject.Test");
         assert_eq!(decl.range, [10, 0, 10, 8]);
 
         let prefix_matches = scanner.search_by_prefix("test_");
@@ -535,14 +525,14 @@ mod tests {
         let largest = scanner
             .largest_module()
             .expect("Should have largest module");
-        assert_eq!(largest.0, "EASCI.Test");
+        assert_eq!(largest.0, "SampleProject.Test");
         assert_eq!(largest.1, 2);
 
         let sub_matches = scanner.search_by_substring("helper");
         assert_eq!(sub_matches.len(), 1);
         assert_eq!(sub_matches[0].0, "test_helper");
 
-        let mod_matches = scanner.filter_by_module_prefix("EASCI.");
+        let mod_matches = scanner.filter_by_module_prefix("SampleProject.");
         assert_eq!(mod_matches.len(), 2);
 
         let mem_est = scanner.estimated_memory_bytes();
@@ -555,27 +545,26 @@ mod tests {
 
         let ndjson = scanner.export_symbol_table_ndjson();
         assert!(ndjson.contains("\"name\":\"test_thm\""));
-        assert!(ndjson.contains("\"module\":\"EASCI.Test\""));
+        assert!(ndjson.contains("\"module\":\"SampleProject.Test\""));
 
         let st = scanner.stats();
         assert_eq!(st.total_symbols, 2);
         assert_eq!(st.total_modules, 1);
-        assert_eq!(st.largest_module, Some(("EASCI.Test".to_string(), 2)));
+        assert_eq!(st.largest_module, Some(("SampleProject.Test".to_string(), 2)));
         assert!(st.estimated_memory_bytes > 0);
     }
 
     #[test]
     fn test_package_roots_discovery() {
-        let repo_root = if Path::new("../../docs/easci/lean").exists() {
-            Path::new("../..")
+        let repo_root = if Path::new("lean/lakefile.lean").exists() {
+            Path::new(".")
+        } else if Path::new("crates/lean-analyzer/lean/lakefile.lean").exists() {
+            Path::new("crates/lean-analyzer")
         } else {
             Path::new(".")
         };
         let roots = BatchILeanScanner::discover_all_package_roots(repo_root);
-        let has_root = roots.iter().any(|r| {
-            let s = r.to_string_lossy();
-            s.contains("docs/easci/lean") || s.ends_with("lean")
-        });
+        let has_root = roots.iter().any(|r| r.to_string_lossy().ends_with("lean"));
         assert!(has_root, "Should discover at least one Lean package root");
     }
 

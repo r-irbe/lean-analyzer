@@ -1,6 +1,6 @@
-//! crates/lean-analyzer/src/interpreter.rs
+//! src/interpreter.rs
 //! In-process abstract evaluation engine over LeanExpr.
-//! Strict 7-bit ASCII only (INV-001).
+//! 
 
 use crate::ast::LeanExpr;
 use crate::lattice::{AbstractBool, AbstractSign, AbstractState};
@@ -521,7 +521,7 @@ impl LeanAbstractInterpreter {
     }
 
     /// Computes a mutual/nested recursive fixpoint over an adjacency graph `adj`
-    /// using Bourdoncle's hierarchical Weak Topological Ordering (`WtoOrdering`, Wave 7).
+    /// using Bourdoncle's hierarchical Weak Topological Ordering (`WtoOrdering`, ).
     pub fn compute_wto_fixpoint<F>(
         &self,
         adj: &[Vec<usize>],
@@ -545,7 +545,7 @@ impl LeanAbstractInterpreter {
         )
     }
 
-    /// Evaluates a Lean expression using Bounded Trace Partitioning (`Rival & Mauborgne 2007`, Wave 7),
+    /// Evaluates a Lean expression using Bounded Trace Partitioning (`Rival & Mauborgne 2007`, ),
     /// maintaining separate `AbstractState` buckets for each control-flow branch sequence up to
     /// `max_depth` nested `ite` / `cond` / `bif` splits before folding via lattice `join`.
     pub fn eval_expr_trace_partitioned(
