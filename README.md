@@ -1,21 +1,13 @@
 # lean-analyzer
 
-Ultra-fast, in-process abstract interpreter, relational domain solver, and zero-copy `.ilean` indexer for Lean 4, compiled to WebAssembly (`wasm32-unknown-unknown`) and native Rust.
+Ultra-fast, in-process abstract interpreter, relational domain solver, and zero-copy `.ilean` indexer for Lean 4, compiled to WebAssembly and native Rust.
 
 For detailed usage, API reference, and examples across Rust, JavaScript/TypeScript, and Lean 4, see [USER_GUIDE.md](USER_GUIDE.md).
 
 ## Key Features
 
-- **Formally Verified Soundness (`lean/`)**: The Galois concretization (`gamma`) and transfer soundness for the 3-bit sign lattice, closed `NatInterval`, affine `NatCongruence`, Granger reduction, Difference-Bound Matrix (`ZoneBound`), and two-variable `NatOctagon2` strong closure are mechanically proved in Lean 4 (`LeanAnalyzer.AbstractInterpretation`) with zero `sorry` and zero Mathlib dependency.
-- **Zero-Dependency WASM Binary (~49 KB)**: Compiles to `wasm32-unknown-unknown` (`data/lean_analyzer.wasm`) with 22 `extern "C"` exports and an ES module wrapper (`js/lean_analyzer_bridge.js`).
-- **Non-Relational & Relational Abstract Domains**:
-  - **Bitset Sign Lattice (`lattice.rs`)**: 3-bit bitmasks (`Zero=1`, `Positive=2`, `Negative=4`) where join is bitwise OR and meet is bitwise AND.
-  - **Natural Intervals (`nat_interval.rs`)**: Closed intervals `[min, max]` over `Nat` with saturation at `i64::MAX` (`+inf`), Warren's *Hacker's Delight* (Ch. 4) exact bitwise `and`/`or`/`xor` interval bounds, and single-quotient-bucket exact `nat_mod`.
-  - **Strided Congruences (`congruence.rs`)**: Granger (1989) arithmetic progressions `stride * Nat + offset` with GCD join, Extended-GCD Chinese Remainder Theorem (CRT) meet, and mutual interval-congruence reduction (`reduce_interval_congruence`).
-  - **Zone / Difference-Bound Matrix (`zone.rs`)**: Mine (2001) relational bounds `v_i - v_j <= c` with incremental `O(V^2)` shortest-path closure, Floyd-Warshall closure, and Lean `decreasing_by` termination discharge (`verify_strict_decrease`, `verify_bounded_decrease`).
-  - **Octagon Domain (`octagon.rs`)**: Mine (2006) relational bounds `+/- v_i +/- v_j <= c` over `2N x 2N` coherent DBMs with strong closure (`even_tighten` + `strengthen`).
-  - **Bourdoncle Weak Topological Ordering & Trace Partitioning (`wto.rs`, `interpreter.rs`)**: Hierarchical SCC decomposition with component-head threshold widening (`harvest_constants`) and bounded branch-trace partitioning (`eval_expr_trace_partitioned`).
-- **Differential Validation Against Lean 4.34.1 (`tests/test_lean_oracle.rs`)**: Checked against a 20,311-row ground-truth oracle generated directly by Lean (`tools/gen_oracle.lean`): 41,292 point exactness checks, 4,304,660 interval soundness checks, and 127,999 congruence/reduction checks.
+- **Zero-Dependency WASM Binary (~49 KB)**: Compiles to WASM (`data/lean_analyzer.wasm`) with `extern "C"` exports and an ES module wrapper (`js/lean_analyzer_bridge.js`).
+- **Validation done against Lean 4.34.1 (`tests/test_lean_oracle.rs`)**: Checked against a 20,311-row ground-truth oracle generated directly by Lean (`tools/gen_oracle.lean`): 41,292 point exactness checks, 4,304,660 interval soundness checks, and 127,999 congruence/reduction checks.
 - **Microsecond `.ilean` Streaming Indexer (`batch_scanner.rs`, `ilean_parser.rs`)**: Zero-copy memory-mapped `.ilean` symbol, module, and declaration range scanner with incremental mtime tracking (`DaemonIndexTracker`).
 
 ## Quick Start
