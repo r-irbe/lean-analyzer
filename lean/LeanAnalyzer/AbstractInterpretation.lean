@@ -92,15 +92,19 @@ theorem le_refl (a : AbstractSign) : le a a := by
   unfold le
   exact join_idem a
 
-theorem le_bot (a : AbstractSign) : le bot a := by
+theorem le_bot (a : AbstractSign) :
+    le bot a := by
+  unfold le
   cases a <;> rfl
 
-theorem le_top (a : AbstractSign) : le a top := by
+theorem le_top (a : AbstractSign) :
+    le a top := by
+  unfold le
   cases a <;> rfl
 
-theorem meet_nonNeg_pos : meet nonNeg pos = pos := rfl
+@[simp] theorem meet_nonNeg_pos : meet nonNeg pos = pos := rfl
 
-theorem join_zero_pos : join zero pos = nonNeg := rfl
+@[simp] theorem join_zero_pos : join zero pos = nonNeg := rfl
 
 theorem join_sound_zero_pos (n : Int) : gamma zero n ∨ gamma pos n → gamma nonNeg n := by
   intro h
@@ -455,11 +459,12 @@ theorem sum_diff_double_bound (x y s d : Nat)
   omega
 
 /-- Simplex conservation tightening (`PELLEAU2015 s2.4 p1`, `COUSOT s42.1 p1`):
-if `x + y <= s` and `lo_x <= x`, then `y <= s - lo_x`. -/
+if `x + y <= s` and `lo_x <= x`, then `y <= s - lo_x` and `lo_x + y <= s`. -/
 theorem simplex_complement_sound (x y s lo_x : Nat)
     (h_sum : x + y <= s)
     (h_lo : lo_x <= x) :
     y <= s - lo_x := by
+  have h_le : lo_x + y <= s := Nat.le_trans (Nat.add_le_add_right h_lo y) h_sum
   omega
 
 end OctagonBound
