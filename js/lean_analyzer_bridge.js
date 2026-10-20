@@ -534,14 +534,373 @@ export class LeanAnalyzerBridge {
       { min: lo1, max: hi1 }
     ];
   }
+
+  /**
+   * Relational `<=` comparison across intervals (`Bottom=0, False=1, True=2, Top=3`).
+   */
+  evalNatBle(min1, max1, min2, max2) {
+    if (this.wasm && typeof this.wasm.exports.lean_analyzer_eval_nat_ble === "function") {
+      return this.wasm.exports.lean_analyzer_eval_nat_ble(
+        BigInt(Math.trunc(min1)),
+        BigInt(Math.trunc(max1)),
+        BigInt(Math.trunc(min2)),
+        BigInt(Math.trunc(max2))
+      );
+    }
+    if (min1 > max1 || min2 > max2) return AbstractBool.Bottom;
+    if (max1 <= min2) return AbstractBool.True;
+    if (min1 > max2) return AbstractBool.False;
+    return AbstractBool.Top;
+  }
+
+  /**
+   * Relational `<` comparison across intervals (`Bottom=0, False=1, True=2, Top=3`).
+   */
+  evalNatBlt(min1, max1, min2, max2) {
+    if (this.wasm && typeof this.wasm.exports.lean_analyzer_eval_nat_blt === "function") {
+      return this.wasm.exports.lean_analyzer_eval_nat_blt(
+        BigInt(Math.trunc(min1)),
+        BigInt(Math.trunc(max1)),
+        BigInt(Math.trunc(min2)),
+        BigInt(Math.trunc(max2))
+      );
+    }
+    if (min1 > max1 || min2 > max2) return AbstractBool.Bottom;
+    if (max1 < min2) return AbstractBool.True;
+    if (min1 >= max2) return AbstractBool.False;
+    return AbstractBool.Top;
+  }
+
+  /**
+   * Relational `==` comparison across intervals (`Bottom=0, False=1, True=2, Top=3`).
+   */
+  evalNatBeq(min1, max1, min2, max2) {
+    if (this.wasm && typeof this.wasm.exports.lean_analyzer_eval_nat_beq === "function") {
+      return this.wasm.exports.lean_analyzer_eval_nat_beq(
+        BigInt(Math.trunc(min1)),
+        BigInt(Math.trunc(max1)),
+        BigInt(Math.trunc(min2)),
+        BigInt(Math.trunc(max2))
+      );
+    }
+    if (min1 > max1 || min2 > max2) return AbstractBool.Bottom;
+    if (min1 === max1 && min2 === max2 && min1 === min2) return AbstractBool.True;
+    if (max1 < min2 || max2 < min1) return AbstractBool.False;
+    return AbstractBool.Top;
+  }
+
+  joinBools(a, b) {
+    if (this.wasm && typeof this.wasm.exports.lean_analyzer_join_bools === "function") {
+      return this.wasm.exports.lean_analyzer_join_bools(a, b);
+    }
+    return (a | b) & 3;
+  }
+
+  meetBools(a, b) {
+    if (this.wasm && typeof this.wasm.exports.lean_analyzer_meet_bools === "function") {
+      return this.wasm.exports.lean_analyzer_meet_bools(a, b);
+    }
+    return (a & b) & 3;
+  }
+
+  packedJoin(v1, v2) {
+    const b1 = BigInt(v1);
+    const b2 = BigInt(v2);
+    if (this.wasm && typeof this.wasm.exports.lean_analyzer_packed_join === "function") {
+      return this.wasm.exports.lean_analyzer_packed_join(b1, b2);
+    }
+    return b1 | b2;
+  }
+
+  packedMeet(v1, v2) {
+    const b1 = BigInt(v1);
+    const b2 = BigInt(v2);
+    if (this.wasm && typeof this.wasm.exports.lean_analyzer_packed_meet === "function") {
+      return this.wasm.exports.lean_analyzer_packed_meet(b1, b2);
+    }
+    return b1 & b2;
+  }
+
+  widenInterval(min1, max1, min2, max2) {
+    const MAX_I64 = 9223372036854775807n;
+    const MIN_I64 = -9223372036854775808n;
+    const toI64 = (v) => {
+      if (v === Number.POSITIVE_INFINITY) return MAX_I64;
+      if (v === Number.NEGATIVE_INFINITY) return MIN_I64;
+      return BigInt(Math.trunc(v));
+    };
+    const fromI64 = (b) => {
+      if (b >= MAX_I64) return Number.POSITIVE_INFINITY;
+      if (b <= MIN_I64) return Number.NEGATIVE_INFINITY;
+      return Number(b);
+    };
+    if (
+      this.wasm &&
+      this.wasm.exports &&
+      typeof this.wasm.exports.lean_analyzer_widen_interval === "function" &&
+      this.memory &&
+      typeof this.wasm.exports.lean_analyzer_get_scratch_ptr === "function"
+    ) {
+      const ptr = this.wasm.exports.lean_analyzer_get_scratch_ptr();
+      const resMin = this.wasm.exports.lean_analyzer_widen_interval(
+        toI64(min1),
+        toI64(max1),
+        toI64(min2),
+        toI64(max2),
+        ptr
+      );
+      const view = new BigInt64Array(this.memory.buffer, ptr, 1);
+      return { min: fromI64(resMin), max: fromI64(view[0]) };
+    }
+    return {
+      min: min2 < min1 ? Number.NEGATIVE_INFINITY : min1,
+      max: max2 > max1 ? Number.POSITIVE_INFINITY : max1
+    };
+  }
+
+  narrowInterval(min1, max1, min2, max2) {
+    const MAX_I64 = 9223372036854775807n;
+    const MIN_I64 = -9223372036854775808n;
+    const toI64 = (v) => {
+      if (v === Number.POSITIVE_INFINITY) return MAX_I64;
+      if (v === Number.NEGATIVE_INFINITY) return MIN_I64;
+      return BigInt(Math.trunc(v));
+    };
+    const fromI64 = (b) => {
+      if (b >= MAX_I64) return Number.POSITIVE_INFINITY;
+      if (b <= MIN_I64) return Number.NEGATIVE_INFINITY;
+      return Number(b);
+    };
+    if (
+      this.wasm &&
+      this.wasm.exports &&
+      typeof this.wasm.exports.lean_analyzer_narrow_interval === "function" &&
+      this.memory &&
+      typeof this.wasm.exports.lean_analyzer_get_scratch_ptr === "function"
+    ) {
+      const ptr = this.wasm.exports.lean_analyzer_get_scratch_ptr();
+      const resMin = this.wasm.exports.lean_analyzer_narrow_interval(
+        toI64(min1),
+        toI64(max1),
+        toI64(min2),
+        toI64(max2),
+        ptr
+      );
+      const view = new BigInt64Array(this.memory.buffer, ptr, 1);
+      return { min: fromI64(resMin), max: fromI64(view[0]) };
+    }
+    return {
+      min: min1 === Number.NEGATIVE_INFINITY ? min2 : min1,
+      max: max1 === Number.POSITIVE_INFINITY ? max2 : max1
+    };
+  }
+
+  /**
+   * Threshold widening over integer intervals `[min1, max1]` and `[min2, max2]` with sorted `thresholds`.
+   */
+  widenWithThresholds(min1, max1, min2, max2, thresholds = []) {
+    const MAX_I64 = 9223372036854775807n;
+    const MIN_I64 = -9223372036854775808n;
+    const toI64 = (v) => {
+      if (v === Number.POSITIVE_INFINITY) return MAX_I64;
+      if (v === Number.NEGATIVE_INFINITY) return MIN_I64;
+      return BigInt(Math.trunc(v));
+    };
+    const fromI64 = (b) => {
+      if (b >= MAX_I64) return Number.POSITIVE_INFINITY;
+      if (b <= MIN_I64) return Number.NEGATIVE_INFINITY;
+      return Number(b);
+    };
+    const sorted = [...thresholds].filter(Number.isFinite).map((t) => Math.trunc(t)).sort((a, b) => a - b);
+
+    if (
+      this.wasm &&
+      this.wasm.exports &&
+      typeof this.wasm.exports.lean_analyzer_widen_with_thresholds === "function" &&
+      this.memory &&
+      typeof this.wasm.exports.lean_analyzer_get_scratch_ptr === "function"
+    ) {
+      const ptr = this.wasm.exports.lean_analyzer_get_scratch_ptr();
+      const outPtr = ptr;
+      const threshPtr = ptr + 16;
+      const threshView = new BigInt64Array(this.memory.buffer, threshPtr, sorted.length);
+      for (let i = 0; i < sorted.length; i++) {
+        threshView[i] = BigInt(sorted[i]);
+      }
+      const ok = this.wasm.exports.lean_analyzer_widen_with_thresholds(
+        toI64(min1),
+        toI64(max1),
+        toI64(min2),
+        toI64(max2),
+        threshPtr,
+        sorted.length,
+        outPtr
+      );
+      if (ok === 1) {
+        const outView = new BigInt64Array(this.memory.buffer, outPtr, 2);
+        return { min: fromI64(outView[0]), max: fromI64(outView[1]) };
+      }
+    }
+
+    let min = min1;
+    if (min2 < min1) {
+      let found = null;
+      for (let i = sorted.length - 1; i >= 0; i--) {
+        if (sorted[i] <= min2) {
+          found = sorted[i];
+          break;
+        }
+      }
+      min = found !== null ? found : (min1 >= 0 && min2 >= 0 ? 0 : Number.NEGATIVE_INFINITY);
+    }
+
+    let max = max1;
+    if (max2 > max1) {
+      let found = null;
+      for (let i = 0; i < sorted.length; i++) {
+        if (sorted[i] >= max2) {
+          found = sorted[i];
+          break;
+        }
+      }
+      max = found !== null ? found : Number.POSITIVE_INFINITY;
+    }
+
+    return { min, max };
+  }
+
+  /**
+   * Parses `.ilean` metadata from a `Uint8Array` or UTF-8 string using WASM or JS fallback.
+   * Returns `{ version, declsCount, importsCount, refsCount }` or `null` on invalid input.
+   */
+  parseIleanMeta(input) {
+    const bytes = typeof input === "string" ? new TextEncoder().encode(input) : input;
+    if (!(bytes instanceof Uint8Array) || bytes.length === 0) {
+      return null;
+    }
+
+    if (
+      this.wasm &&
+      this.wasm.exports &&
+      typeof this.wasm.exports.lean_analyzer_parse_ilean_meta === "function" &&
+      this.memory &&
+      typeof this.wasm.exports.lean_analyzer_get_scratch_ptr === "function" &&
+      typeof this.wasm.exports.lean_analyzer_get_scratch_len === "function"
+    ) {
+      const scratchPtr = this.wasm.exports.lean_analyzer_get_scratch_ptr();
+      const scratchLen = this.wasm.exports.lean_analyzer_get_scratch_len();
+      const headerBytes = 16; // 4 x u32 output slots
+      if (bytes.length + headerBytes <= scratchLen) {
+        const dataPtr = scratchPtr + headerBytes;
+        new Uint8Array(this.memory.buffer, dataPtr, bytes.length).set(bytes);
+        const ok = this.wasm.exports.lean_analyzer_parse_ilean_meta(
+          dataPtr,
+          bytes.length,
+          scratchPtr,
+          scratchPtr + 4,
+          scratchPtr + 8,
+          scratchPtr + 12
+        );
+        if (ok === 1) {
+          const out = new Uint32Array(this.memory.buffer, scratchPtr, 4);
+          return {
+            version: out[0],
+            declsCount: out[1],
+            importsCount: out[2],
+            refsCount: out[3]
+          };
+        }
+        return null;
+      }
+    }
+
+    try {
+      const text = typeof input === "string" ? input : new TextDecoder().decode(bytes);
+      const parsed = JSON.parse(text);
+      if (!parsed || typeof parsed !== "object") return null;
+      return {
+        version: typeof parsed.version === "number" ? parsed.version : 1,
+        declsCount: parsed.decls && typeof parsed.decls === "object" ? Object.keys(parsed.decls).length : 0,
+        importsCount: Array.isArray(parsed.directImports) ? parsed.directImports.length : 0,
+        refsCount: parsed.references && typeof parsed.references === "object" ? Object.keys(parsed.references).length : 0
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Finds the declaration covering 1-indexed `(line, col)` in an `.ilean` JSON buffer.
+   * Returns the declaration name string or `null` if none matches.
+   */
+  findDeclAt(input, line, col) {
+    const bytes = typeof input === "string" ? new TextEncoder().encode(input) : input;
+    if (!(bytes instanceof Uint8Array) || bytes.length === 0) {
+      return null;
+    }
+
+    if (
+      this.wasm &&
+      this.wasm.exports &&
+      typeof this.wasm.exports.lean_analyzer_find_decl_at === "function" &&
+      this.memory &&
+      typeof this.wasm.exports.lean_analyzer_get_scratch_ptr === "function" &&
+      typeof this.wasm.exports.lean_analyzer_get_scratch_len === "function"
+    ) {
+      const scratchPtr = this.wasm.exports.lean_analyzer_get_scratch_ptr();
+      const scratchLen = this.wasm.exports.lean_analyzer_get_scratch_len();
+      const maxNameLen = 1024;
+      if (bytes.length + maxNameLen <= scratchLen) {
+        const namePtr = scratchPtr;
+        const dataPtr = scratchPtr + maxNameLen;
+        new Uint8Array(this.memory.buffer, dataPtr, bytes.length).set(bytes);
+        const written = this.wasm.exports.lean_analyzer_find_decl_at(
+          dataPtr,
+          bytes.length,
+          line >>> 0,
+          col >>> 0,
+          namePtr,
+          maxNameLen
+        );
+        if (written > 0) {
+          return new TextDecoder().decode(new Uint8Array(this.memory.buffer, namePtr, written));
+        }
+        return null;
+      }
+    }
+
+    try {
+      const text = typeof input === "string" ? input : new TextDecoder().decode(bytes);
+      const parsed = JSON.parse(text);
+      if (!parsed || !parsed.decls || typeof parsed.decls !== "object") return null;
+      for (const [name, coords] of Object.entries(parsed.decls)) {
+        if (Array.isArray(coords) && coords.length >= 4) {
+          const [sLine, sCol, eLine, eCol] = coords;
+          const afterStart = line > sLine || (line === sLine && col >= sCol);
+          const beforeEnd = line < eLine || (line === eLine && col <= eCol);
+          if (afterStart && beforeEnd) {
+            return name;
+          }
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
 }
 
 export async function loadLeanAnalyzerBridge(wasmUrlOrBuffer = null) {
   if (!wasmUrlOrBuffer) {
     try {
       const fs = await import("node:fs/promises");
-      const url = new URL("../data/lean_analyzer.wasm", import.meta.url);
-      wasmUrlOrBuffer = await fs.readFile(url);
+      try {
+        const url = new URL("../data/lean_analyzer.wasm", import.meta.url);
+        wasmUrlOrBuffer = await fs.readFile(url);
+      } catch {
+        const url = new URL("../wasm/lean_analyzer.wasm", import.meta.url);
+        wasmUrlOrBuffer = await fs.readFile(url);
+      }
     } catch {
       return new LeanAnalyzerBridge(null);
     }
@@ -552,3 +911,4 @@ export async function loadLeanAnalyzerBridge(wasmUrlOrBuffer = null) {
   const { instance } = await WebAssembly.instantiate(bytes, {});
   return new LeanAnalyzerBridge(instance);
 }
+

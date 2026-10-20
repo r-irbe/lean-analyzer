@@ -18,9 +18,10 @@ if [[ ! -f "${WASM_OUT}" ]]; then
   exit 1
 fi
 
-mkdir -p "${CRATE_DIR}/data"
+mkdir -p "${CRATE_DIR}/data" "${CRATE_DIR}/wasm"
 cp "${WASM_OUT}" "${CRATE_DIR}/data/lean_analyzer.wasm"
-echo "Updated ${CRATE_DIR}/data/lean_analyzer.wasm"
+cp "${WASM_OUT}" "${CRATE_DIR}/wasm/lean_analyzer.wasm"
+echo "Updated ${CRATE_DIR}/data/lean_analyzer.wasm and ${CRATE_DIR}/wasm/lean_analyzer.wasm"
 
 for dest_dir in "$@"; do
   if [[ -d "${dest_dir}" ]]; then

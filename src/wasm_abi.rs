@@ -373,6 +373,36 @@ pub extern "C" fn lean_analyzer_narrow_interval(min1: i64, max1: i64, min2: i64,
     res.min
 }
 
+/// Threshold interval widening operator across WASM boundary.
+/// Reads `thresholds_len` i64 values from `thresholds_ptr` and writes `[min, max]` into `out_buf`.
+#[no_mangle]
+pub extern "C" fn lean_analyzer_widen_with_thresholds(
+    min1: i64,
+    max1: i64,
+    min2: i64,
+    max2: i64,
+    thresholds_ptr: *const i64,
+    thresholds_len: usize,
+    out_buf: *mut i64,
+) -> u8 {
+    if out_buf.is_null() {
+        return 0;
+    }
+    let thresholds: &[i64] = if thresholds_ptr.is_null() || thresholds_len == 0 {
+        &[]
+    } else {
+        unsafe { std::slice::from_raw_parts(thresholds_ptr, thresholds_len) }
+    };
+    let i1 = IntervalBound::new(min1, max1);
+    let i2 = IntervalBound::new(min2, max2);
+    let res = i1.widen_with_thresholds(&i2, thresholds);
+    unsafe {
+        *out_buf = res.min;
+        *out_buf.add(1) = res.max;
+    }
+    1
+}
+
 /// Indexes an in-memory .ilean buffer and returns the number of declarations found.
 #[no_mangle]
 pub extern "C" fn lean_analyzer_batch_scan_buffer(ptr: *const u8, len: usize) -> u32 {

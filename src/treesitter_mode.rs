@@ -153,7 +153,14 @@ impl TreeSitterCstNode {
                     } else {
                         (&self.children[1], &self.children[0])
                     };
-                    let op_expr = op.to_lean_expr()?;
+                    let op_expr = match &op.kind {
+                        CstNodeKind::Ident(id) => match id.trim() {
+                            "-" | "neg" => LeanExpr::Const("Neg.neg".to_string()),
+                            "!" | "not" | "¬" => LeanExpr::Const("Bool.not".to_string()),
+                            other => LeanExpr::Const(Self::normalize_ident_operator(other)),
+                        },
+                        _ => op.to_lean_expr()?,
+                    };
                     let operand_expr = operand.to_lean_expr()?;
                     Some(LeanExpr::App(Box::new(op_expr), Box::new(operand_expr)))
                 } else if self.children.len() == 1 {
@@ -473,10 +480,28 @@ mod tests {
         let expr = neg_cst.to_lean_expr().expect("Should convert unary op");
         match expr {
             LeanExpr::App(f, arg) => {
-                assert_eq!(*f, LeanExpr::Const("Nat.sub".to_string()));
+                assert_eq!(*f, LeanExpr::Const("Neg.neg".to_string()));
                 assert_eq!(*arg, LeanExpr::LitNat(42));
             }
             _ => panic!("Expected App for unary expression"),
         }
+    }
+
+    #[test]
+    fn test_treesitter_two_child_unary_minus_lowers_to_neg() {
+        let sexpr = b"(unary_op (ident -) (nat_lit 7))";
+        let mut parser = TreeSitterSExprParser::new(sexpr);
+        let cst = parser.parse().expect("Failed to parse 2-child unary minus");
+        assert_eq!(cst.kind, CstNodeKind::UnaryOp);
+        assert_eq!(cst.children.len(), 2);
+
+        let expr = cst.to_lean_expr().expect("Should lower 2-child unary minus");
+        assert_eq!(
+            expr,
+            LeanExpr::App(
+                Box::new(LeanExpr::Const("Neg.neg".to_string())),
+                Box::new(LeanExpr::LitNat(7)),
+            )
+        );
     }
 }
