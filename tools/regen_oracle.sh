@@ -10,10 +10,10 @@ mkdir -p "$(dirname "${OUT}")"
 
 if [[ -n "${LEAN_ORACLE_PROJECT_DIR:-}" && -d "${LEAN_ORACLE_PROJECT_DIR}" ]]; then
   cd "${LEAN_ORACLE_PROJECT_DIR}"
+elif [[ -d "${CRATE_DIR}/lean" ]]; then
+  cd "${CRATE_DIR}/lean"
 elif [[ -d "${CRATE_DIR}/../../docs/easci/lean" ]]; then
   cd "${CRATE_DIR}/../../docs/easci/lean"
-else
-  cd "${CRATE_DIR}/lean"
 fi
 
 lake env lean --run "${SCRIPT_DIR}/gen_oracle.lean" | LC_ALL=C tr -d '\r' > "${OUT}.tmp"
